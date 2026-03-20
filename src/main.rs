@@ -37,20 +37,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // 描画処理
-    terminal.draw(|f| {
-        let paragraph = Paragraph::new(slides[0])
-            .block(Block::default().title(" Slide 1 ").borders(Borders::ALL))
-            .alignment(Alignment::Center);
+    let mut current_page = 0;
 
-        f.render_widget(paragraph, f.area());
-    })?;
-
-    // キー入力待ちの無限ループ
     loop {
+        // 描画処理
+        terminal.draw(|f| {
+            // current_page 番目のスライドを表示
+            let title = format!(" Slide {} / {} ", current_page + 1, slides.len());
+            let paragraph = Paragraph::new(slides[current_page])
+                .block(Block::default().title(title).borders(Borders::ALL))
+                .alignment(Alignment::Center);
+
+            f.render_widget(paragraph, f.area());
+        })?;
+
+        // 入力処理
         if let Event::Key(key) = event::read()? {
-            if key.code == KeyCode::Char('q') {
-                break;
+            match key.code {
+                // 'q' で終了
+                KeyCode::Char('q') => break,
+
+                // 右矢印キーで次のページへ
+                KeyCode::Right => {
+                    if current_page < slides.len() - 1 {
+                        current_page += 1;
+                    }
+                }
+
+                // 左矢印キーで前のページへ
+                KeyCode::Left => {
+                    if current_page > 0 {
+                        current_page -= 1;
+                    }
+                }
+                _ => {}
             }
         }
     }
