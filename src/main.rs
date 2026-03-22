@@ -14,6 +14,8 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
+use ratatui::layout::{Constraint, Direction, Layout};
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -42,13 +44,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // 描画処理
         terminal.draw(|f| {
-            // current_page 番目のスライドを表示
+            // 画面を「縦方向」に3分割するレイアウト
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Percentage(25), // 上の余白（25%）
+                    Constraint::Percentage(50), // メインコンテンツ（50%）
+                    Constraint::Percentage(25), // 下の余白（25%）
+                ])
+                .split(f.area()); // 画面全体(f.area())を分割
+
+            // スライドのウィジェット作成
             let title = format!(" Slide {} / {} ", current_page + 1, slides.len());
             let paragraph = Paragraph::new(slides[current_page])
                 .block(Block::default().title(title).borders(Borders::ALL))
                 .alignment(Alignment::Center);
 
-            f.render_widget(paragraph, f.area());
+            f.render_widget(paragraph, chunks[1]);
         })?;
 
         // 入力処理
