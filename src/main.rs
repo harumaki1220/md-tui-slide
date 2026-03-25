@@ -10,11 +10,11 @@ use crossterm::{
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
-    layout::Alignment,
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
-
-use ratatui::layout::{Constraint, Direction, Layout};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -52,11 +52,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Constraint::Percentage(50), // メインコンテンツ（50%）
                     Constraint::Percentage(25), // 下の余白（25%）
                 ])
-                .split(f.area()); // 画面全体(f.area())を分割
+                .split(f.area());
+
+            let current_slide_text = slides[current_page];
+
+            // 行ごとに処理して「装飾付きの行」のリストを作る
+            let mut lines = Vec::new();
+            for line in current_slide_text.lines() {
+                if line.starts_with("# ") {
+                    // 見出し（# ）の場合：記号を消して青・太字にする
+                    let header_text = line.trim_start_matches("# ").trim();
+                    lines.push(Line::from(Span::styled(
+                        header_text,
+                        Style::default()
+                            .fg(Color::Blue)
+                            .add_modifier(Modifier::BOLD),
+                    )));
+                } else {
+                    // 普通の行
+                    lines.push(Line::from(line));
+                }
+            }
 
             // スライドのウィジェット作成
             let title = format!(" Slide {} / {} ", current_page + 1, slides.len());
-            let paragraph = Paragraph::new(slides[current_page])
+            let paragraph = Paragraph::new(lines)
                 .block(Block::default().title(title).borders(Borders::ALL))
                 .alignment(Alignment::Center);
 
