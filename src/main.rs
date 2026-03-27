@@ -114,7 +114,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let title = format!(" Slide {} / {} ", current_page + 1, slides.len());
             let paragraph = Paragraph::new(lines)
                 .block(Block::default().title(title).borders(Borders::ALL))
-                .alignment(Alignment::Center);
+                .alignment(Alignment::Left);
 
             f.render_widget(paragraph, chunks[1]);
         })?;
