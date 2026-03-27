@@ -17,9 +17,23 @@ use ratatui::{
 };
 
 // 1行の文字列を受け取り、装飾された Line を返す
-fn parse_markdown_line(line: &str) -> Line<'_> {
+fn parse_markdown_line<'a>(line: &'a str, in_code_block: &mut bool) -> Line<'a> {
+    // コードブロックの開始/終了を検知（``` で始まる行）
+    if line.starts_with("```") {
+        *in_code_block = !*in_code_block; // trueとfalseを反転させる
+        return Line::from(Span::styled(line, Style::default().fg(Color::DarkGray)));
+    }
+
+    // コードブロック「内部」の行の装飾
+    if *in_code_block {
+        return Line::from(Span::styled(
+            format!("  {}  ", line), // 見栄えのために左右に空白を入れる
+            Style::default().fg(Color::Cyan).bg(Color::DarkGray),
+        ));
+    }
+
+    // それ以外の通常のMarkdown構文（既存のコードをそのまま配置）
     if line.starts_with("# ") {
-        // 見出し1（青・太字）
         let text = line.trim_start_matches("# ").trim();
         Line::from(Span::styled(
             text,
@@ -47,6 +61,7 @@ fn parse_markdown_line(line: &str) -> Line<'_> {
         Line::from(line)
     }
 }
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -89,8 +104,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // 行ごとに処理して「装飾付きの行」のリストを作る
             let mut lines = Vec::new();
+            let mut in_code_block = false;
+
             for line in current_slide_text.lines() {
-                lines.push(parse_markdown_line(line));
+                lines.push(parse_markdown_line(line, &mut in_code_block));
             }
 
             // スライドのウィジェット作成
