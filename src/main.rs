@@ -16,6 +16,37 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
+// 1行の文字列を受け取り、装飾された Line を返す
+fn parse_markdown_line(line: &str) -> Line<'_> {
+    if line.starts_with("# ") {
+        // 見出し1（青・太字）
+        let text = line.trim_start_matches("# ").trim();
+        Line::from(Span::styled(
+            text,
+            Style::default()
+                .fg(Color::Blue)
+                .add_modifier(Modifier::BOLD),
+        ))
+    } else if line.starts_with("## ") {
+        // 見出し2（緑・太字）
+        let text = line.trim_start_matches("## ").trim();
+        Line::from(Span::styled(
+            text,
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        ))
+    } else if line.starts_with("- ") {
+        // 箇条書き（黄色）
+        let text = line.trim_start_matches("- ").trim();
+        let bullet = Span::styled("• ", Style::default().fg(Color::Yellow));
+        let content = Span::raw(text);
+        Line::from(vec![bullet, content])
+    } else {
+        // 普通のテキスト（白）
+        Line::from(line)
+    }
+}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -59,19 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // 行ごとに処理して「装飾付きの行」のリストを作る
             let mut lines = Vec::new();
             for line in current_slide_text.lines() {
-                if line.starts_with("# ") {
-                    // 見出し（# ）の場合：記号を消して青・太字にする
-                    let header_text = line.trim_start_matches("# ").trim();
-                    lines.push(Line::from(Span::styled(
-                        header_text,
-                        Style::default()
-                            .fg(Color::Blue)
-                            .add_modifier(Modifier::BOLD),
-                    )));
-                } else {
-                    // 普通の行
-                    lines.push(Line::from(line));
-                }
+                lines.push(parse_markdown_line(line));
             }
 
             // スライドのウィジェット作成
