@@ -6,14 +6,17 @@ use ratatui::{
 pub fn parse_markdown_line<'a>(line: &'a str, in_code_block: &mut bool) -> Line<'a> {
     // コードブロックの開始/終了を検知（``` で始まる行）
     if line.starts_with("```") {
-        *in_code_block = !*in_code_block; // trueとfalseを反転させる
-        return Line::from(Span::styled(line, Style::default().fg(Color::DarkGray)));
+        *in_code_block = !*in_code_block;
+        return Line::from(Span::styled(
+            format!("  {:<60}  ", line),
+            Style::default().fg(Color::Gray).bg(Color::DarkGray),
+        ));
     }
 
     // コードブロック「内部」の行の装飾
     if *in_code_block {
         return Line::from(Span::styled(
-            format!("  {}  ", line), // 見栄えのために左右に空白を入れる
+            format!("  {:<60}  ", line), // 見栄えのために左右に空白を入れる
             Style::default().fg(Color::Cyan).bg(Color::DarkGray),
         ));
     }
