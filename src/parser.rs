@@ -43,10 +43,45 @@ pub fn parse_markdown_line<'a>(line: &'a str, in_code_block: &mut bool) -> Line<
         // 箇条書き（黄色）
         let text = line.trim_start_matches("- ").trim();
         let bullet = Span::styled("• ", Style::default().fg(Color::Yellow));
-        let content = Span::raw(text);
-        Line::from(vec![bullet, content])
+        let mut content = parse_inline_text(text);
+        let mut spans = vec![bullet];
+        spans.append(&mut content);
+        Line::from(spans)
+    } else if line.starts_with("> ") {
+        let text = line.trim_start_matches("> ").trim();
+        // 引用符として左側に緑色の縦線を入れ、文字を斜体(Italic)で暗くする
+        let quote_mark = Span::styled("┃ ", Style::default().fg(Color::Green));
+        let content = Span::styled(
+            text,
+            Style::default()
+                .fg(Color::Gray)
+                .add_modifier(Modifier::ITALIC),
+        );
+        Line::from(vec![quote_mark, content])
     } else {
-        // 普通のテキスト（白）
-        Line::from(line)
+        Line::from(parse_inline_text(line))
     }
+}
+
+// 文字列を "**" で分割して、通常文字と太字を交互にSpanにする関数
+fn parse_inline_text<'a>(text: &'a str) -> Vec<Span<'a>> {
+    let mut spans = Vec::new();
+    // "**" で文字列を分割する
+    let parts: Vec<&str> = text.split("**").collect();
+
+    for (i, part) in parts.iter().enumerate() {
+        if i % 2 == 1 {
+            // 奇数番目（**で囲まれた内側）は太字にする
+            spans.push(Span::styled(
+                *part,
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::White),
+            ));
+        } else {
+            // 偶数番目（外側）は通常のテキスト
+            spans.push(Span::raw(*part));
+        }
+    }
+    spans
 }
