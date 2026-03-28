@@ -63,26 +63,56 @@ pub fn parse_markdown_line<'a>(line: &'a str, in_code_block: &mut bool) -> Line<
     }
 }
 
-// 文字列を "**" で分割して、通常文字と太字を交互にSpanにする関数
-fn parse_inline_text<'a>(text: &'a str) -> Vec<Span<'a>> {
+fn parse_inline_text<'a>(mut text: &'a str) -> Vec<Span<'a>> {
     let mut spans = Vec::new();
-    // "**" で文字列を分割する
-    let parts: Vec<&str> = text.split("**").collect();
 
-    for (i, part) in parts.iter().enumerate() {
-        if i % 2 == 1 {
-            // 奇数番目（**で囲まれた内側）は太字にする
-            spans.push(Span::styled(
-                *part,
-                Style::default()
-                    .add_modifier(Modifier::BOLD)
-                    .fg(Color::White),
-            ));
+    while !text.is_empty() {
+        // 次の "**" と "`" がどこにあるか探す
+        let bold_idx = text.find("**");
+        let code_idx = text.find('`');
+
+        let (next_marker, next_idx) = match (bold_idx, code_idx) {
+            (Some(b), Some(c)) if b < c => ("**", b), // 太字が先
+            (Some(_), Some(c)) => ("`", c),           // コードが先
+            (Some(b), None) => ("**", b),             // 太字しかない
+            (None, Some(c)) => ("`", c),              // コードしかない
+            (None, None) => {
+                spans.push(Span::raw(text));
+                break;
+            }
+        };
+
+        if next_idx > 0 {
+            spans.push(Span::raw(&text[..next_idx]));
+        }
+
+        let after_marker = &text[next_idx + next_marker.len()..];
+
+        if let Some(end_idx) = after_marker.find(next_marker) {
+            let content = &after_marker[..end_idx];
+
+            // 記号の種類に応じて装飾を変える
+            if next_marker == "**" {
+                spans.push(Span::styled(
+                    content,
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .fg(Color::White),
+                ));
+            } else {
+                spans.push(Span::styled(
+                    content,
+                    Style::default().fg(Color::Red).bg(Color::DarkGray), // コードは赤文字＋背景グレー
+                ));
+            }
+
+            text = &after_marker[end_idx + next_marker.len()..];
         } else {
-            // 偶数番目（外側）は通常のテキスト
-            spans.push(Span::raw(*part));
+            spans.push(Span::raw(&text[..next_idx + next_marker.len()]));
+            text = after_marker;
         }
     }
+
     spans
 }
 
@@ -92,19 +122,23 @@ mod tests {
 
     #[test]
     fn test_parse_inline_text() {
-        let input = "通常文字と**太字**のテスト";
+        let input = "通常、**太字**、そして `コード` のテスト";
 
         let result = parse_inline_text(input);
 
-        // "通常文字と"、"太字"、"のテスト" の3つのパーツに分かれているはず
-        assert_eq!(result.len(), 3);
+        // "通常、" | "太字" | "、そして " | "コード" | " のテスト" -> 5パーツになるはず
+        assert_eq!(result.len(), 5);
 
-        // 中身のテキストが合っているか確認
-        assert_eq!(result[0].content, "通常文字と");
+        assert_eq!(result[0].content, "通常、");
+
         assert_eq!(result[1].content, "太字");
-        assert_eq!(result[2].content, "のテスト");
-
-        // 2番目のパーツが本当に太字になっているか確認
         assert!(result[1].style.add_modifier.contains(Modifier::BOLD));
+
+        assert_eq!(result[2].content, "、そして ");
+
+        assert_eq!(result[3].content, "コード");
+        assert_eq!(result[3].style.fg, Some(Color::Red)); // コードは赤色になっているか？
+
+        assert_eq!(result[4].content, " のテスト");
     }
 }
