@@ -45,19 +45,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // 描画処理
         terminal.draw(|f| {
-            // 画面を「縦方向」に3分割するレイアウト
-            let chunks = Layout::default()
+            // 画面全体を縦方向に3分割する
+            let vertical_chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
-                    Constraint::Percentage(25), // 上の余白（25%）
-                    Constraint::Percentage(50), // メインコンテンツ（50%）
-                    Constraint::Percentage(25), // 下の余白（25%）
+                    Constraint::Percentage(20), // 上の余白（少し狭くしました）
+                    Constraint::Percentage(60), // スライドの高さ
+                    Constraint::Percentage(20), // 下の余白
                 ])
                 .split(f.area());
 
+            // 縦の真ん中エリアをさらに横方向に3分割する
+            let horizontal_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Percentage(15), // 左の余白
+                    Constraint::Percentage(70), // スライドの横幅
+                    Constraint::Percentage(15), // 右の余白
+                ])
+                .split(vertical_chunks[1]);
+
             let current_slide_text = slides[current_page];
 
-            // 行ごとに処理して「装飾付きの行」のリストを作る
             let mut lines = Vec::new();
             let mut in_code_block = false;
 
@@ -65,13 +74,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 lines.push(parse_markdown_line(line, &mut in_code_block));
             }
 
-            // スライドのウィジェット作成
             let title = format!(" Slide {} / {} ", current_page + 1, slides.len());
             let paragraph = Paragraph::new(lines)
                 .block(Block::default().title(title).borders(Borders::ALL))
-                .alignment(Alignment::Left);
+                .alignment(Alignment::Left); // 文字自体は読みやすいように左揃え
 
-            f.render_widget(paragraph, chunks[1]);
+            // 最終的に描画するのは縦横に分割されたど真ん中のエリア
+            f.render_widget(paragraph, horizontal_chunks[1]);
         })?;
 
         // 入力処理
