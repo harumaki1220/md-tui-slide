@@ -85,3 +85,26 @@ fn parse_inline_text<'a>(text: &'a str) -> Vec<Span<'a>> {
     }
     spans
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_inline_text() {
+        let input = "通常文字と**太字**のテスト";
+
+        let result = parse_inline_text(input);
+
+        // "通常文字と"、"太字"、"のテスト" の3つのパーツに分かれているはず
+        assert_eq!(result.len(), 3);
+
+        // 中身のテキストが合っているか確認
+        assert_eq!(result[0].content, "通常文字と");
+        assert_eq!(result[1].content, "太字");
+        assert_eq!(result[2].content, "のテスト");
+
+        // 2番目のパーツが本当に太字になっているか確認
+        assert!(result[1].style.add_modifier.contains(Modifier::BOLD));
+    }
+}
