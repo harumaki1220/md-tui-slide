@@ -26,7 +26,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let file_path = &args[1];
-    let content = fs::read_to_string(file_path)?;
+
+    let content = match fs::read_to_string(file_path) {
+        Ok(text) => text,
+        Err(_) => {
+            eprintln!(
+                "エラー: ファイル '{}' が見つかりません、または読み込めません。",
+                file_path
+            );
+            std::process::exit(1);
+        }
+    };
 
     let slides: Vec<&str> = content.split("---").map(|s| s.trim()).collect();
     if slides.is_empty() {
