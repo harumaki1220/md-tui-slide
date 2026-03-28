@@ -11,6 +11,7 @@ use ratatui::{
     Terminal,
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
 };
 
@@ -79,8 +80,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .block(Block::default().title(title).borders(Borders::ALL))
                 .alignment(Alignment::Left); // 文字自体は読みやすいように左揃え
 
-            // 最終的に描画するのは縦横に分割されたど真ん中のエリア
+            // 縦横に分割されたど真ん中のエリア
             f.render_widget(paragraph, horizontal_chunks[1]);
+
+            let footer_text = " q: 終了 | ←/→: ページ移動 ";
+            let footer = Paragraph::new(footer_text)
+                .style(Style::default().fg(Color::DarkGray))
+                .alignment(Alignment::Center);
+
+            // 縦に3分割した一番下のエリアに描画する
+            f.render_widget(footer, vertical_chunks[2]);
         })?;
 
         // 入力処理
